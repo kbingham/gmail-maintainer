@@ -22,6 +22,42 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 
+class Message:
+    def __init__(self, message):
+        self.headers = {}
+        for h in message['payload']['headers']:
+            self.headers[h['name']] = h['value']
+
+        self.Subject = self.headers['Subject']
+        self.From = self.headers['From']
+
+    def __str__(self):
+        return f"{self.headers['Subject']} ({self.headers['From']})"
+
+
+class Thread:
+    def __init__(self, service, thread):
+        '''
+            {
+             'id': '175cdc40da51800f',
+             'snippet': '<leading mail text>',
+             'historyId': '7563335'
+            }
+        '''
+        self.service = service
+        self.thread = thread
+        self.id = thread['id']
+        self.tdata = service.users().threads().get(userId='me', id=thread['id']).execute()
+
+        self.messages = []
+
+        for msg in self.tdata['messages']:
+            self.messages.append(Message(msg))
+
+    def __str__(self):
+        return str(self.messages[0])
+
+
 class Gmail:
     # If modifying these scopes, delete the file token.pickle.
     scopes = ['https://www.googleapis.com/auth/gmail.readonly']
@@ -65,3 +101,12 @@ class Gmail:
 
     def label(self, l):
         return self.labels()[l]
+
+    def threads(self, label):
+        response = self.service.users().threads().list(userId='me',
+                                                       labelIds=label['id']).execute()
+        threads = []
+        threads.extend(response['threads'])
+
+        for thread in threads:
+            yield Thread(self.service, thread)
