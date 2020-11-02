@@ -58,6 +58,19 @@ class Thread:
         return str(self.messages[0])
 
 
+class Label:
+    def __init__(self, label):
+        self.label = label
+        self.name = label['name']
+        self.id = label['id']
+
+    def __str__(self):
+        return str(self.name + ' : (' + self.id + ')')
+
+    def __repr__(self):
+        return str(self)
+
+
 class Gmail:
     # Changing the scopes will require re-authentication, with a new token.
     scopes = ['https://www.googleapis.com/auth/gmail.modify']
@@ -97,7 +110,7 @@ class Gmail:
                 print('No labels found.')
             else:
                 for label in label_results:
-                    self.labels_[label['name']] = label
+                    self.labels_[label['name']] = Label(label)
 
         return self.labels_
 
@@ -106,7 +119,7 @@ class Gmail:
 
     def threads(self, label):
         response = self.service.users().threads().list(userId='me',
-                                                       labelIds=label['id']).execute()
+                                                       labelIds=label.id).execute()
         threads = []
         threads.extend(response['threads'])
 
