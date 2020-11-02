@@ -51,9 +51,10 @@ class Thread:
                                                    id=self.id,
                                                    format='metadata').execute()
         self.messages = []
-
         for msg in self.tdata['messages']:
             self.messages.append(Message(msg))
+
+        self.subject = self.messages[0].Subject
 
     def modify(self, removeLabels, addLabels):
         toModify = {
