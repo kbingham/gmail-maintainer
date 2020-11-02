@@ -47,8 +47,9 @@ class Thread:
         self.service = service
         self.thread = thread
         self.id = thread['id']
-        self.tdata = service.users().threads().get(userId='me', id=thread['id']).execute()
-
+        self.tdata = service.users().threads().get(userId='me',
+                                                   id=self.id,
+                                                   format='metadata').execute()
         self.messages = []
 
         for msg in self.tdata['messages']:
