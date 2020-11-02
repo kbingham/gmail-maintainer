@@ -88,6 +88,28 @@ class Label:
         return str(self)
 
 
+class ThreadPage:
+    def __init__(self, service, label, pageToken=None):
+        if pageToken:
+            response = service.users().threads().list(userId='me',
+                                                      labelIds=label.id,
+                                                      pageToken=pageToken).execute()
+        else:
+            response = service.users().threads().list(userId='me',
+                                                      labelIds=label.id).execute()
+        self.threads_ = []
+        self.threads_ = response['threads'].copy()
+        self.resultSizeEstimate = response['resultSizeEstimate']
+        if 'nextPageToken' in response:
+            self.nextPageToken = response['nextPageToken']
+        else:
+            self.nextPageToken = False
+
+    def threads(self):
+        for thread in self.threads_:
+            yield thread
+
+
 class Gmail:
     # Changing the scopes will require re-authentication, with a new token.
     scopes = ['https://www.googleapis.com/auth/gmail.modify']
@@ -135,10 +157,11 @@ class Gmail:
         return self.labels()[l]
 
     def threads(self, label):
-        response = self.service.users().threads().list(userId='me',
-                                                       labelIds=label.id).execute()
-        threads = []
-        threads.extend(response['threads'])
-
-        for thread in threads:
+        tpage = ThreadPage(self.service, label)
+        for thread in tpage.threads():
             yield Thread(self.service, thread)
+
+        while tpage.nextPageToken:
+            tpage = ThreadPage(self.service, label, tpage.nextPageToken)
+            for thread in tpage.threads():
+                yield Thread(self.service, thread)
