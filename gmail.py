@@ -54,6 +54,21 @@ class Thread:
         for msg in self.tdata['messages']:
             self.messages.append(Message(msg))
 
+    def modify(self, removeLabels, addLabels):
+        toModify = {
+                    "removeLabelIds": [l.id for l in removeLabels],
+                    "addLabelIds": [l.id for l in addLabels],
+        }
+        return self.service.users().threads().modify(userId='me',
+                                                     id=self.id,
+                                                     body=toModify).execute()
+
+    def addLabel(self, label):
+        return self.modify([], [label])
+
+    def removeLabel(self, label):
+        return self.modify([label], [])
+
     def __str__(self):
         return str(self.messages[0])
 
