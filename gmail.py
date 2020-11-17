@@ -68,6 +68,7 @@ class DbCache:
 d = DbCache()
 
 
+# https://developers.google.com/gmail/api/reference/rest/v1/users.messages
 class Message:
     def __init__(self, message):
         self.headers = {}
@@ -82,6 +83,7 @@ class Message:
         return f"{self.headers['Subject']} ({self.headers['From']})"
 
 
+# https://developers.google.com/gmail/api/reference/rest/v1/users.threads
 class Thread:
     def __init__(self, service, thread):
         '''
@@ -138,7 +140,7 @@ class Thread:
     def raw(self):
         return self.thread
 
-
+# https://developers.google.com/gmail/api/reference/rest/v1/users.labels
 class Label:
     def __init__(self, label):
         self.label = label
