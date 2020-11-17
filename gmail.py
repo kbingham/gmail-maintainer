@@ -76,6 +76,7 @@ class Message:
 
         self.Subject = self.headers['Subject']
         self.From = self.headers['From']
+        self.labels = message['labelIds']
 
     def __str__(self):
         return f"{self.headers['Subject']} ({self.headers['From']})"
@@ -123,6 +124,13 @@ class Thread:
 
     def removeLabel(self, label):
         return self.modify([label], [])
+
+    def labels(self):
+        messageLabels = set()
+        for m in self.messages:
+            messageLabels.update(m.labels)
+
+        return messageLabels
 
     def __str__(self):
         return str(self.messages[0])
