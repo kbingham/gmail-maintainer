@@ -74,6 +74,9 @@ class Thread:
     def __str__(self):
         return str(self.messages[0])
 
+    def raw(self):
+        return self.thread
+
 
 class Label:
     def __init__(self, label):

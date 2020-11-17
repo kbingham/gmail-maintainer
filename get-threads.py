@@ -8,6 +8,7 @@ def main():
     libcamera = g.label('IOB/libcamera')
 
     for thread in g.threads(libcamera):
+        print(thread.raw())
         for message in thread.messages:
             print(message)
 
