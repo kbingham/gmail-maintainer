@@ -66,28 +66,27 @@ def main():
     completed = set()
 
     for thread in g.threads(libcamera):
-        for message in thread.messages:
-            print(message)
-
-        print()
-
         subject = re.sub(list_prefixes, '', thread.subject)
 
         default = False
+
+        print(thread.subject)
 
         if repo.has_commit(subject):
             print('**********************************************')
             print('    thread: {}: \"{}\" is in the log'.format(thread.id, subject))
             print('**********************************************')
             default = True
+            for message in thread.messages:
+                print(message)
+            print()
+
 
         if default:
             if yes_no('Mark as done?', default):
                 print(" Done with that one ")
                 thread.modify([libcamera], [done])
                 completed.add(thread)
-
-        print("")
 
     print("The following threads were moved:")
     for thread in completed:
