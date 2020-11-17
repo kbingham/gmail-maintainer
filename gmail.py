@@ -15,11 +15,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import pickle
+import sqlite3
 import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+
+
+class DbCache:
+    def __init__(self):
+        dbpath = 'cache.db'
+        db_exists = os.path.isfile(dbpath)
+
+        self.c = sqlite3.connect(dbpath)
+        self.cursor = self.c.cursor()
+
+        if not db_exists:
+            self.create_tables()
+            self.commit()
+
+    def commit(self):
+        self.c.commit()
+
+    def create_tables(self):
+        self.cursor.execute('''
+        CREATE TABLE threads (
+            id TEXT,
+            data json
+            )
+        ''')
+
+    def getThreadData(self, tid):
+        ret = self.cursor.execute('''
+            SELECT data FROM threads WHERE id=?
+        ''', (tid, )).fetchall()
+
+        if not ret:
+            return []
+
+        return json.loads(ret[0][0])
+
+    def saveThreadData(self, tid, tdata):
+        self.cursor.execute('''
+            INSERT INTO threads VALUES(?, ?)
+        ''', (tid, json.dumps(tdata)))
+
+        self.commit()
+
+
+d = DbCache()
 
 
 class Message:
@@ -47,9 +93,16 @@ class Thread:
         self.service = service
         self.thread = thread
         self.id = thread['id']
-        self.tdata = service.users().threads().get(userId='me',
-                                                   id=self.id,
-                                                   format='metadata').execute()
+        self.historyId = thread['historyId']
+
+        # Load data from cache if available, or Gmail otherwise.
+        self.tdata = d.getThreadData(self.id)
+        if not self.tdata:
+            self.tdata = service.users().threads().get(userId='me',
+                                                       id=self.id,
+                                                       format='metadata').execute()
+            d.saveThreadData(self.id, self.tdata)
+
         self.messages = []
         for msg in self.tdata['messages']:
             self.messages.append(Message(msg))
