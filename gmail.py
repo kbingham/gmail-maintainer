@@ -42,25 +42,34 @@ class DbCache:
     def create_tables(self):
         self.cursor.execute('''
         CREATE TABLE threads (
-            id TEXT,
+            id TEXT PRIMARY KEY,
+            historyId INTEGER,
             data json
             )
         ''')
 
-    def getThreadData(self, tid):
+    def getThreadData(self, tid, historyId):
         ret = self.cursor.execute('''
-            SELECT data FROM threads WHERE id=?
+            SELECT historyId, data FROM threads WHERE id=?
         ''', (tid, )).fetchall()
 
         if not ret:
             return []
 
-        return json.loads(ret[0][0])
+        if len(ret) > 1:
+            print("Warning: Cache search returned more than one entry")
 
-    def saveThreadData(self, tid, tdata):
+        if int(ret[0][0]) < historyId:
+            print("This thread is out of date. Not returning cached item")
+            return []
+
+        # Return the cached json data field
+        return json.loads(ret[0][1])
+
+    def saveThreadData(self, tid, historyId, tdata):
         self.cursor.execute('''
-            INSERT INTO threads VALUES(?, ?)
-        ''', (tid, json.dumps(tdata)))
+            REPLACE INTO threads VALUES(?, ?, ?)
+        ''', (tid, historyId, json.dumps(tdata)))
 
         self.commit()
 
@@ -96,15 +105,15 @@ class Thread:
         self.service = service
         self.thread = thread
         self.id = thread['id']
-        self.historyId = thread['historyId']
+        self.historyId = int(thread['historyId'])
 
         # Load data from cache if available, or Gmail otherwise.
-        self.tdata = d.getThreadData(self.id)
+        self.tdata = d.getThreadData(self.id, self.historyId)
         if not self.tdata:
             self.tdata = service.users().threads().get(userId='me',
                                                        id=self.id,
                                                        format='metadata').execute()
-            d.saveThreadData(self.id, self.tdata)
+            d.saveThreadData(self.id, self.historyId, self.tdata)
 
         self.messages = []
         for msg in self.tdata['messages']:
